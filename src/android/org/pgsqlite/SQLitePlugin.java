@@ -7,6 +7,7 @@
 package org.pgsqlite;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.database.Cursor;
 import android.database.CursorWindow;
 import android.database.sqlite.SQLiteCursor;
@@ -18,6 +19,9 @@ import android.util.Base64;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.IllegalArgumentException;
 import java.lang.Number;
 import java.util.concurrent.ConcurrentHashMap;
@@ -116,6 +120,13 @@ public class SQLitePlugin extends CordovaPlugin {
                 deleteDatabase(dbname, cbc);
 
                 break;
+
+			
+			case importPrepopulatedDatabase:
+				o = args.getJSONObject(0);
+				this.importPrepopulatedDatabase(o.getString("file"), o.getString("importIfExists").equals("true"));
+				break;
+
 
             case executeSqlBatch:
             case backgroundExecuteSqlBatch:
@@ -240,6 +251,77 @@ public class SQLitePlugin extends CordovaPlugin {
             cbc.error("can't open database " + e);
             throw e;
         }
+    }
+	
+	private boolean importPrepopulatedDatabase(String inFileName, boolean importIfExists)
+    {
+    	// Log.v(SQLitePlugin.class.getSimpleName(), "importPrepopulatedDatabase " + inFileName + " " + importIfExists);
+
+    	if ( inFileName == null ) {
+            Log.e(SQLitePlugin.class.getSimpleName(), "importPrepopulatedDatabase was not provided a filename.");
+            return false;
+    	}
+    	
+    	final String fileName = inFileName.trim();
+    	
+    	if ( fileName.length() == 0 ) {
+            Log.e(SQLitePlugin.class.getSimpleName(), "importPrepopulatedDatabase was provided with an empty filename.");
+            return false;
+    	}
+    	
+        final File dbfile = this.cordova.getActivity().getDatabasePath(fileName);
+    	boolean dbExistsInTheFileSystem = dbfile.exists();
+        
+        if ( !importIfExists && dbExistsInTheFileSystem ) 
+    	{
+            Log.i(SQLitePlugin.class.getSimpleName(), "importPrepopulatedDatabase - not overwriting existing database.");
+            return true;
+    	}
+
+        if ( !dbExistsInTheFileSystem ) {
+        	dbfile.getParentFile().mkdirs();
+        }
+
+    	// Copy the database from the bundle to the file system.
+    	final Activity activity = this.cordova.getActivity();
+
+    	// Having this run on a background thread will cause the
+    	// function to return before the database has a chance to be
+    	// copied over from the bundle. The subsequent code will
+    	// then attempt to open a database that's not yet ready.
+    	// Since this is an operation that takes place on startup,
+    	// best to allow the webcore thread to block a bit, while
+    	// copying the database from the bundle, instead of risking
+    	// database corruption.
+//    	this.cordova.getThreadPool().execute(new Runnable() {
+//			@Override
+//			public void run () {
+				try
+				{
+					InputStream inputStream = activity.getAssets().open("www/db/" + fileName);
+					OutputStream outputStream = new FileOutputStream(dbfile);
+					
+					byte[] buffer = new byte[1024];
+					int length;
+					while ( (length = inputStream.read(buffer)) > 0 )
+					{
+						outputStream.write(buffer, 0, length);
+					}
+					
+					outputStream.flush();
+					outputStream.close();
+					inputStream.close();
+				}
+		        catch ( Exception e ) 
+		        {
+					Log.e(SQLitePlugin.class.getSimpleName(), "importPrepopulatedDatabase - can't open " + fileName, e);
+					return false;
+				}
+//			}
+//		});
+
+		// Log.v(SQLitePlugin.class.getSimpleName(), "importPrepopulatedDatabase - returning");
+        return true;
     }
 
     /**
@@ -874,6 +956,7 @@ public class SQLitePlugin extends CordovaPlugin {
         open,
         close,
         delete,
+        importPrepopulatedDatabase, 
         executeSqlBatch,
         backgroundExecuteSqlBatch,
     }

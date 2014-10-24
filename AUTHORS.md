@@ -7,6 +7,7 @@
 - Translated to Coffee-Script using js2coffee tool by @brodybits (Chris Brody)
 - API changes by @brodybits (Chris Brody)
 - Transaction timing fixes to support PouchDB by @nolanlawson
+- Addition of support for bundled databases by @andrey_butov
 
 ## Android version
 
@@ -14,6 +15,7 @@
 - Transaction batch processing of Android version by @marcucio
 - Maintained by @brodybits (Chris Brody)
 - Fixes to support old Android versions by @nolanlawson
+- Addition of support for bundled databases by @andrey_butov
 
 ## iOS version
 
@@ -21,6 +23,7 @@
 - Cordova 2.7+ port with background processing by @j3k0 (Jean-Christophe Hoelt <hoelt@fovea.cc>)
 - Embedded public domain LIBB64 encoding routines from http://libb64.sourceforge.net by @tbbdeveloper (Chris Robertson <oztexan@gmail.com>)
 - Maintained by @brodybits (Chris Brody)
+- Addition of support for bundled databases by @andrey_butov
 
 ## WP version
 

@@ -286,6 +286,67 @@ static void sqlite_regexp(sqlite3_context* context, int argc, sqlite3_value** va
 }
 
 
+
+- (void) importPrepopulatedDatabase:(CDVInvokedUrlCommand*)command
+{
+    NSMutableDictionary* options = [command.arguments objectAtIndex:0];
+    NSString* fileName = [NSString stringWithFormat:@"%@", [options objectForKey:@"file"]];
+	BOOL importIfExists = [[options objectForKey:@"importIfExists"] intValue] == 1;
+
+	if ( fileName == NULL )
+	{
+		CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+			messageAsString:@"Cannot import prepopulated database - file name not provided."];
+			
+		[self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+	
+		return;
+	}
+
+	// trim whitespace
+	fileName = [fileName stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+
+	if ( fileName.length == 0 )
+	{
+		CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+			messageAsString:@"Cannot import prepopulated database - file name is empty."];
+			
+		[self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+	
+		return;
+	}
+	
+	NSString* databaseInFileSystem = [self getDBPath:fileName];
+	NSFileManager* fileManager = [NSFileManager defaultManager];
+	
+	if ( !importIfExists && [fileManager fileExistsAtPath:databaseInFileSystem])
+	{
+		CDVPluginResult* pluginResult = [CDVPluginResult
+			resultWithStatus:CDVCommandStatus_OK
+			messageAsString:@"Prepopulated database not imported - existing database found."];
+			
+		[self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+		
+		return;
+	}
+
+	// Copy database from the bundle to the file system.
+	
+	NSString* databaseInBundle = [[[NSBundle mainBundle] resourcePath]
+		stringByAppendingPathComponent:[NSString stringWithFormat:@"www/db/%@",fileName]];
+		
+	[fileManager removeItemAtPath:databaseInFileSystem error:nil];
+	[fileManager copyItemAtPath:databaseInBundle toPath:databaseInFileSystem error:nil];
+
+	CDVPluginResult* pluginResult = [CDVPluginResult
+		resultWithStatus:CDVCommandStatus_OK
+		messageAsString:@"Prepopulated database imported."];
+			
+	[self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+
+
 -(void) backgroundExecuteSqlBatch: (CDVInvokedUrlCommand*)command
 {
     [self.commandDelegate runInBackground:^{

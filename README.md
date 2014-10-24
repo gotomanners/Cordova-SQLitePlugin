@@ -102,6 +102,22 @@ function onDeviceReady() {
 
 **NOTE:** The database file name should include the extension, if desired.
 
+
+## Opening a pre-populated database from the bundle on iOS and Android
+
+Include your pre-populated SQLite database file in the **www/db** directory of your Cordova project. For example, **www/db/movies.sqlite**
+
+Import the database as follows:
+
+`window.sqlitePlugin.importPrepopulatedDatabase({file: "movies.sqlite", "importIfExists": true});`
+
+Once this is done, open the database in the usual way:
+
+`window.sqlitePlugin.openDatabase({name: "movies.sqlite"});`
+
+The pre-populated database will be copied from the application bundle to the appropriate location in the file system on the device. If you want to always have a fresh copy of the database on every app launch, set the **importIfExists** option to **true**. Otherwise, if you only want to import the bundled, pre-populated database once, set the **importIfExists** option to **false**.
+
+
 ## Background processing
 
 The threading model depens on which version is used:
